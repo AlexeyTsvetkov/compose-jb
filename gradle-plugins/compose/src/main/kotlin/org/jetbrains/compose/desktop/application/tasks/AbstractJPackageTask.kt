@@ -205,12 +205,14 @@ abstract class AbstractJPackageTask @Inject constructor(
             }
             OS.Windows -> {
                 cliArg("--win-console", winConsole)
-                cliArg("--win-dir-chooser", winDirChooser)
-                cliArg("--win-per-user-install", winPerUserInstall)
-                cliArg("--win-shortcut", winShortcut)
-                cliArg("--win-menu", winMenu)
-                cliArg("--win-menu-group", winMenuGroup)
-                cliArg("--win-upgrade-uuid", winUpgradeUuid)
+                if (targetFormat != TargetFormat.AppImage) {
+                    cliArg("--win-dir-chooser", winDirChooser)
+                    cliArg("--win-per-user-install", winPerUserInstall)
+                    cliArg("--win-shortcut", winShortcut)
+                    cliArg("--win-menu", winMenu)
+                    cliArg("--win-menu-group", winMenuGroup)
+                    cliArg("--win-upgrade-uuid", winUpgradeUuid)
+                }
             }
         }
 
