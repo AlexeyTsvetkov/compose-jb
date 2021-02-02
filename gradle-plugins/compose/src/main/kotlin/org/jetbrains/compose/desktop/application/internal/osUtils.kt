@@ -1,5 +1,6 @@
 package org.jetbrains.compose.desktop.application.internal
 
+import org.gradle.api.internal.file.FileOperations
 import org.gradle.api.tasks.Internal
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import java.io.File
@@ -60,6 +61,17 @@ internal object MacUtils {
 
     val xcrun: File by lazy {
         File("/usr/bin/xcrun").checkExistingFile()
+    }
+}
+
+internal inline fun <T> FileOperations.useCleanTempDir(dir: File, fn: (File) -> T): T {
+    delete(dir)
+    dir.mkdirs()
+
+    return try {
+        fn(dir)
+    } finally {
+        delete(dir)
     }
 }
 
