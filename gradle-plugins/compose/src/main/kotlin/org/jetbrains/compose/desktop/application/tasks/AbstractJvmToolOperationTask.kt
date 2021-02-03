@@ -16,10 +16,11 @@ import org.gradle.process.ExecSpec
 import org.gradle.work.InputChanges
 import org.jetbrains.compose.desktop.application.internal.*
 import org.jetbrains.compose.desktop.application.internal.ComposeProperties
-import org.jetbrains.compose.desktop.application.internal.OS
-import org.jetbrains.compose.desktop.application.internal.currentOS
 import org.jetbrains.compose.desktop.application.internal.notNullProperty
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.OutputStream
+import java.io.PrintStream
 import javax.inject.Inject
 
 abstract class AbstractJvmToolOperationTask(private val toolName: String) : DefaultTask() {
@@ -49,7 +50,7 @@ abstract class AbstractJvmToolOperationTask(private val toolName: String) : Defa
 
     @get:Internal
     val verbose: Property<Boolean> = objects.notNullProperty<Boolean>().apply {
-        set(providers.provider { logger.isDebugEnabled }.orElse(ComposeProperties.isVerbose(providers)))
+        set(providers.provider { logger.isDebugEnabled || ComposeProperties.isVerbose(providers).get() })
     }
 
     protected open fun prepareWorkingDir(inputChanges: InputChanges) {
@@ -86,15 +87,35 @@ abstract class AbstractJvmToolOperationTask(private val toolName: String) : Defa
         }
 
         try {
-            execOperations.exec { exec ->
-                configureExec(exec)
-                exec.executable = jtool.absolutePath
-                exec.setArgs(listOf("@${argsFile.absolutePath}"))
-            }.also { checkResult(it) }
+            val (stdout, errRes) =
+                stringFromStream { outStream ->
+                    stringFromStream { stdoutStream ->
+                        execOperations.exec { exec ->
+                            configureExec(exec)
+                            exec.executable = jtool.absolutePath
+                            exec.setArgs(listOf("@${argsFile.absolutePath}"))
+                        }
+                    }
+                }
+            val (stderr, res) = errRes
+            if (verbose.get() || res.exitValue != 0) {
+                logger.lifecycle("Process stdout:")
+                logger.lifecycle(stdout)
+                logger.error("Process error:")
+                logger.error(stderr)
+            }
+            checkResult(res)
         } finally {
             if (!ComposeProperties.preserveWorkingDir(providers).get()) {
                 fileOperations.delete(workingDir)
             }
         }
     }
+}
+
+internal inline fun <T> stringFromStream(fn: (OutputStream) -> T): Pair<String, T> {
+    val baos = ByteArrayOutputStream()
+    val ps = PrintStream(baos)
+    val result = ps.use(fn)
+    return baos.toString() to result
 }
