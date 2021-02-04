@@ -167,9 +167,9 @@ abstract class AbstractJPackageTask @Inject constructor(
     protected val signDir: Provider<Directory> = project.layout.buildDirectory.dir("compose/tmp/sign")
 
     override fun makeArgs(tmpDir: File): MutableList<String> = super.makeArgs(tmpDir).apply {
-        if (targetFormat == TargetFormat.AppImage) {
+        if (targetFormat == TargetFormat.AppImage || appImage.orNull == null) {
             cliArg("--input", tmpDir)
-            check(runtimeImage.isPresent) { "runtimeImage must be set for ${TargetFormat.AppImage}" }
+            check(runtimeImage.isPresent) { "runtimeImage must be set for $targetFormat, when launcher is generated" }
             check(!appImage.isPresent) { "appImage must not be set for ${TargetFormat.AppImage}" }
             cliArg("--runtime-image", runtimeImage)
             cliArg("--main-jar", launcherMainJar.ioFile.name)
