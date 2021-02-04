@@ -174,6 +174,19 @@ abstract class AbstractJPackageTask @Inject constructor(
             cliArg("--runtime-image", runtimeImage)
             cliArg("--main-jar", launcherMainJar.ioFile.name)
             cliArg("--main-class", launcherMainClass)
+
+            when (currentOS) {
+                OS.Windows -> {
+                    cliArg("--win-console", winConsole)
+                }
+            }
+            cliArg("--icon", iconFile)
+            launcherArgs.orNull?.forEach {
+                cliArg("--arguments", it)
+            }
+            launcherJvmArgs.orNull?.forEach {
+                cliArg("--java-options", it)
+            }
         } else {
             check(!runtimeImage.isPresent) { "runtimeImage must not be set for $targetFormat" }
             check(appImage.isPresent) { "appImage must be set for $targetFormat" }
@@ -207,20 +220,11 @@ abstract class AbstractJPackageTask @Inject constructor(
         cliArg("--dest", destinationDir)
         cliArg("--verbose", verbose)
 
-        cliArg("--icon", iconFile)
-
         cliArg("--name", packageName)
         cliArg("--description", packageDescription)
         cliArg("--copyright", packageCopyright)
         cliArg("--app-version", packageVersion)
         cliArg("--vendor", packageVendor)
-
-        launcherArgs.orNull?.forEach {
-            cliArg("--arguments", it)
-        }
-        launcherJvmArgs.orNull?.forEach {
-            cliArg("--java-options", it)
-        }
 
         when (currentOS) {
             OS.MacOS -> {
@@ -233,9 +237,6 @@ abstract class AbstractJPackageTask @Inject constructor(
                     cliArg("--mac-signing-keychain", signing.keychain)
                     cliArg("--mac-package-signing-prefix", signing.prefix)
                 }
-            }
-            OS.Windows -> {
-                cliArg("--win-console", winConsole)
             }
         }
     }
